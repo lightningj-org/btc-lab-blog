@@ -23,4 +23,5 @@ is supported by newer tested.
 
 *IMPORTANT* This is only for fun test project and never intended for any real funds.
 
-First part of the guide is how to get starting with the project with a few tips in using Cargo.
+First part of the guide is how to get starting with the project with a few tips in using Cargo. Then
+some overview of using the wallet before going through some tips and tricks on developing the functionality.
