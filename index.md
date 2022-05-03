@@ -23,7 +23,7 @@ Java API for the LND RPC Endpoints that I have maintained since 2018.
 ### Contact
 
 If you have any questions, feedback or notice anything wrong in the articles it is possible
-to create a issue or PR at https://github.com/lightningj-org/btc-tool-blog.
+to create a issue or PR at [https://github.com/lightningj-org/btc-tool-blog].
 
 I also have a twitter handle at [@LightningJ_org](https://twitter.com/LightningJ_org). 
 
