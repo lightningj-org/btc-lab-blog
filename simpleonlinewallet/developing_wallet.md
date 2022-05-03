@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Developing the wallet
+title: Developing the Wallet
 parent: Simple Online Wallet
 nav_order: 4
 ---

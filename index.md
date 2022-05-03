@@ -1,39 +1,29 @@
-## Welcome to GitHub Pages
+## BTC Tool Blog
 
-You can use the [editor on GitHub](https://github.com/lightningj-org/btc-tool-blog/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+Hi 
 
-test
+I've started learning Rust and tooling related to the Bitcoin ecosystem try to document the learning process.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+The goal of this blog is that it should contain tips and tricks learnt when developing tooling for various areas related 
+to Bitcoin that might help others.
 
-### Markdown
+The first project is a simple Bitcoin CLI wallet using [BDK library](https://bitcoindevkit.org/) written in Rust.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+But in the future I will also study creating Taproot transactions and hope to do a multi-signature wallet using
+taproot as a base. After that I hope creating a simple Lightning wallet using the LDK library.
 
-```markdown
-Syntax highlighted code block
+### About Me
 
-# Header 1
-## Header 2
-### Header 3
+I'm a software developer that have worked 20 years with Open Source development in PKI and cryptographic related applications, 
+mainly i Java and Groovy.
 
-- Bulleted
-- List
+I also maintain a Java project LightningJ (www.lightningj.org) a small project which provides a 
+Java API for the LND RPC Endpoints that I have maintained since 2018.
 
-1. Numbered
-2. List
+### Contact
 
-**Bold** and _Italic_ and `Code` text
+If you have any questions, feedback or notice anything wrong in the articles it is possible
+to create a issue or PR at https://github.com/lightningj-org/btc-tool-blog.
 
-[Link](url) and ![Image](src)
-```
+I also have a twitter handle at [@LightningJ_org](https://twitter.com/LightningJ_org). 
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/lightningj-org/btc-tool-blog/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.

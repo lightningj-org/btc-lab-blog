@@ -13,7 +13,7 @@ that have the following features:
 * Create wallet with BIP 39 seed phrase
 * Recover a wallet from seed phrases
 * Generate a new address (in bech32 address format).
-* Show Current balance
+* Show current balance
 * List transactions in a table
 * Create and send a transaction.
 
