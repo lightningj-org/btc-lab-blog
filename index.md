@@ -2,7 +2,7 @@
 
 Hi 
 
-I've started learning Rust and tooling related to the Bitcoin ecosystem try to document the learning process.
+I've started learning Rust and tooling related to the Bitcoin ecosystem have decided to document the learning process.
 
 The goal of this blog is that it should contain tips and tricks learnt when developing tooling for various areas related 
 to Bitcoin that might help others.
