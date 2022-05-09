@@ -36,6 +36,8 @@ To execute all tests use the command:
 
 TODO
 
+Talk about deriviation paths
+
 ```
     /// Help method to create an online wallet that is in common for create and import commands.
     pub(crate) fn create_online_wallet(name : &String, chain : &Chain,
@@ -78,7 +80,9 @@ TODO
 }
 ```
 
-TODO
+With this _create_online_wallet_ doing all the heavy lifting the create wallet command
+becomes quite straight forward. If first generates the 12 Mnemonic sees phrases, displays
+them on screen and then calls the _create_online_wallet_ function.
 
 ```
     fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
@@ -232,11 +236,78 @@ TODO
 
 ## Generating Addresses
 
-TODO
+The code for generating a new receive address using BDK is very simple.
+The address type generated is depending on the descriptor string used when creating
+the wallet. In this case is a Bech32 (native Segwit) generated since the wallet descriptor 
+started with 'm/84'.
+
+To generate a new address just call _get_address()_. The code can
+be found at _src/cmd/wallet/newaddresscmd.rs_.
+
+```
+    fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
+        let (wallet, _) = get_wallet(&self.name, &self.settings)?;
+        let new_address = wallet.get_address(AddressIndex::New)?;
+        println!("New address: {}", new_address.to_string());
+        Ok(())
+    }
+```
 
 ## Listing Transactions
 
-TODO
+Listing all transactions of a wallet is quite easy. Just call wallet.list_transactions()
+to retrieve all transactions. Then I used the [cli-table](https://crates.io/crates/cli-table) crate to 
+format the table.
+
+In the example I just display the data in the BDK transaction struct. A real wallet would probably
+recalculate some fields to make the UX a bit clearer.
+
+The code for listing transactions i quite straight forward and can be found
+at _src/cmd/wallet/listtransactionscmd.rs_:
+
+```
+    fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
+        let (wallet, _) = get_wallet(&self.name, &self.settings)?;
+        let _ = sync_wallet(&wallet)?;
+        // In future include raw transactions in list
+        let transactions = wallet.list_transactions(false)?;
+
+        let _ = print_stdout(gen_transaction_table(&transactions));
+
+        Ok(())
+    }
+```
+
+The help method to create a nice CLI table presented on the console:
+
+```
+/// Help method to generate a seed word table with justified columns.
+pub fn gen_transaction_table(transactions : &Vec<TransactionDetails>) -> TableStruct {
+    let mut rows : Vec<Vec<CellStruct>> = vec![];
+    for transaction in transactions{
+        rows.push(vec![
+            transaction.txid.to_string().cell(),
+            transaction.sent.to_string().cell(),
+            transaction.received.to_string().cell(),
+            match &transaction.fee {
+                None => "None".to_string(),
+                Some(fee_value) => format!("{}", fee_value)
+            }.cell(),
+            match &transaction.confirmation_time {
+                None => "None".to_string(),
+                Some(confirm_time) => format!("{}", confirm_time.height)
+            }.cell(),
+        ])
+    }
+    return rows.table().title(vec![
+        "TransactionId".cell().bold(true),
+        "Sent".cell().bold(true),
+        "Received".cell().bold(true),
+        "Fee".cell().bold(true),
+        "Confirmation Block".cell().bold(true),
+    ])
+}
+```
 
 ## Creating and Sending Funds
 
