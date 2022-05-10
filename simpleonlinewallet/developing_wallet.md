@@ -232,7 +232,20 @@ TODO
 
 ## Displaying the Balance
 
-TODO
+To display the current wallet balance is really simple. Just call _get_balance()_ to
+get the number of available Satoshis in the wallet. A real wallet would probably
+convert it into different denominations (BTC, bits, USD etc) but that is pure calculations.
+
+```
+    fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
+        let (wallet, _) = get_wallet(&self.name, &self.settings)?;
+        let _ = sync_wallet(&wallet)?;
+        println!("Current balance: {} SAT", wallet.get_balance()?);
+        Ok(())
+    }
+```
+
+The code can be found in _src/cmd/wallet/getbalancecmd.rs_.
 
 ## Generating Addresses
 
@@ -311,4 +324,47 @@ pub fn gen_transaction_table(transactions : &Vec<TransactionDetails>) -> TableSt
 
 ## Creating and Sending Funds
 
-TODO
+To Create and send a transaction is dome in four steps, after syncronizing the wallet.
+
+First step is to parse and validate the address. This is done with:
+```
+let address = Address::from_str(self.to_address.as_str()).map_err(|e| into_err(format!("Invalid address specified: {}",e)))?;
+```
+
+In the second step, I build up a transaction with the TxBuilder. I set the recipient address and amount (in SATs) and enable Replace-By-Fee flag.
+Then I check if a custom fee was set as CLI argument and in that case use that as SAT per Virtual Byte.
+
+Finally, I finish the transaction and generates an ASCII table out put to the user.
+
+```
+        let mut tx_builder = online_wallet.build_tx();
+        tx_builder
+            .add_recipient(address.script_pubkey(), self.amount)
+            .enable_rbf();
+        if self.fee != 0.0{
+            tx_builder.fee_rate(FeeRate::from_sat_per_vb(self.fee));
+        }
+        let (mut psbt, tx_details) = tx_builder.finish()?;
+
+        let _ = print_stdout(gen_transaction_table(&vec![tx_details]));
+```
+
+Third and fourth I sign the transaction with the wallet Signer and broadcasts
+the raw transaction to the network with:
+
+```
+        let finalized = online_wallet.sign(&mut psbt, SignOptions::default())?;
+        if finalized {
+            let raw_transaction = psbt.extract_tx();
+            blockchain.broadcast(&raw_transaction)?;
+            let txid = &raw_transaction.txid();
+            println!(
+                "Transaction sent to Network.\nExplorer URL: https://blockstream.info/testnet/tx/{txid}",
+                txid = txid
+            );
+        }else{
+            println!("Transaction could not be signed.")
+        }
+```
+
+The code can be found at _src/cmd/wallet/sendcmd.rs_.
