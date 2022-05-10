@@ -15,7 +15,7 @@ taproot as a base. After that I hope creating a simple Lightning wallet using th
 ### About Me
 
 I'm a software developer that have worked 20 years with Open Source development in PKI and cryptographic related applications, 
-mainly i Java and Groovy.
+mainly in Java and Groovy.
 
 I also maintain a Java project LightningJ (www.lightningj.org) a small project which provides a 
 Java API for the LND RPC Endpoints that I have maintained since 2018.
