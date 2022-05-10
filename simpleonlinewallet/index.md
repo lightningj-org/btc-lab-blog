@@ -5,7 +5,7 @@ nav_order: 2
 has_children: true
 ---
 
-# Simple wallet into
+# Simple Wallet Intro
 
 My first project in learning RUST/Bitcoin/BDK development was creating a simple wallet
 that have the following features:
