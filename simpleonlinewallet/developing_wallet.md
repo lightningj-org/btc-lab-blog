@@ -322,7 +322,7 @@ pub fn gen_transaction_table(transactions : &Vec<TransactionDetails>) -> TableSt
 }
 ```
 
-## Creating and Sending Funds
+## Sending Funds
 
 To create and send a transaction is done in four steps, after synchronizing the wallet.
 
