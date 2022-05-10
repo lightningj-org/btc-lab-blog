@@ -228,7 +228,76 @@ BDK from 0.17 have simplified this behaviour so creating this WalletContainer mi
 
 ## Importing a Wallet
 
-TODO
+Importing a wallet using existing seed words is practically the same when creating a new one. The only
+difference is that the user is prompted for the seed words on the console.
+
+To read a word and check that it is a valid word according to the english wordlist I used the following
+code. This method is called repeatedly 12 times.
+
+```
+fn get_word(n : i32) -> Result<String, Box<dyn Error>>{
+    let mut retval;
+    loop {
+        println!("Enter word {}: ", n);
+        let mut word = String::new();
+        let _ = stdin().read_line(&mut word)?;
+        retval = word.to_lowercase().trim().to_string();
+        let matching_words = Language::English.words_by_prefix(retval.as_str());
+        if matching_words.len() == 1 && matching_words[0].eq(retval.as_str()){
+            break;
+        }else{
+            println!("Invalid word {} entered, try again",n)
+        }
+    }
+
+    return Ok(retval);
+}
+```
+
+The full code to create an imported wallet is and can be found _src/cmd/nowallet/importwalletcmd.rs_:
+
+```
+    fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
+        let app_dir = get_or_create_app_dir()?;
+        if wallet_exists(&self.name)? {
+            return Err(into_err(format!("Error wallet {} already exists, remove files {}{} and {}{} in directory {}.",
+                                        &self.name,&self.name,WALLET_DATA_POSTFIX,
+                                        &self.name,WALLET_DB_POSTFIX, app_dir.to_str().unwrap())));
+        }
+
+        println!("You are about to recreate a new wallet with name {}.",&self.name);
+        println!("The wallet will be recreated with your seed phrases in combination");
+        println!("with your wallet password.");
+        println!();
+        let mut words: Vec<String>;
+        loop {
+            println!("Enter your seed phrases (Use Ctrl-C to abort): ");
+
+            words = vec![];
+            for n in 1..13 {
+                let word = get_word( n)?;
+                words.push(word)
+            }
+
+            println!();
+            println!("You have entered the following seed phrases:");
+            print_stdout(gen_seed_word_table(&words))?;
+            if get_confirmation("Is this correct? (yes,no):")? {
+                break;
+            }
+        }
+        let password = read_verified_password()?;
+
+        let word_string = words.join(" ");
+        let mnemonic = Mnemonic::from_str(word_string.as_str())?;
+
+        create_online_wallet(&self.name, &self.chain,
+                             mnemonic, password,
+                             &self.settings , &app_dir)?;
+
+        return Ok(());
+    }
+```
 
 ## Displaying the Balance
 
