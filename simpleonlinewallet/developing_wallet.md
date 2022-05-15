@@ -9,16 +9,18 @@ nav_order: 4
 
 In this section I will go through all tips and tricks I learnt developing this simple wallet and hopefully
 helps you to get started. Using the BDK library didn't always feel straight forward, at least if you
-are not to familiar will all concept of Bitcoin terminology.
+are not too familiar will all Bitcoin terminology.
 
 ## Overall Structure of the Project
 
 The structure of the project follows the RUST conventions with all source code in _src_ directory and 
 integration tests in _tests_ directory.
 
-The _src_ directory contains the main.rs file which contains the main function and definitions for
-parsing CLI arguments using the crate [clap](https://crates.io/crates/clap), that helps a lot with sorting out the 
-options. Then there are the submodules _src/core_ containing helper functions and structures in common between
+The _src_ directory contains the main.rs file, which contains the main function and definitions for
+parsing CLI arguments using the crate [clap](https://crates.io/crates/clap). It helps a lot with sorting out the 
+options when using the tool. 
+
+Then there are the submodules _src/core_ containing helper functions and structures in common between
 commands and _src/cmd_ where each command is separated into it own rust source file.
 
 ### Automated Testing
@@ -34,55 +36,88 @@ To execute all tests use the command:
 
 ## Creating a Wallet
 
-TODO
+The hardest part when writing a bitcoin wallet software using BDK was creating the actual wallet.
 
-Talk about deriviation paths
+Before doing so I had to dig into how Wallet Descriptors and Derivation Paths worked before being
+able to generate the wallet. So I will give some tips and tricks on creating both
+descriptors and derivation path before going through the actual code of creating a wallet.
+
+### Wallet Descriptors
+
+The first thing to understand when creating the wallet using BDK is the figuring out how Wallet Descriptors work. BDK
+uses a very flexible way of defining the Bitcoin scripts created for spending output and addresses and provides an 
+extended set of Mini-script for encoding the generated bitcoin script language. BDK have a description of
+its extended mini-script support at its [descriptor page](https://bitcoindevkit.org/descriptors/).
+
+In the simple wallet I choose to use the simple mini-script _wpkh(ext_key)_ which stands for Pay-to-Witness-Public-Key-Hash
+(P2WPKH) which is used to create addresses using Segwit native addresses, i.e. generate addresses that start with _bc1_ 
+or _tb1_ for testnet. 
+
+But with BDKs flexible design it is possible to create more advanced wallet structures by
+using a different mini-script.  Reading more about mini-scripts and also compiling and analyzing can be done with the 
+[mini script website](https://bitcoin.sipa.be/miniscript/).
+
+
+### Using Derivation Paths
+
+The next thing to understand is how DerivationPaths work. BDK uses a Hierarchical Deterministic (HD) wallet used to derive 
+a specific key within a tree of keys that was defined in [BIP 32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki). 
+
+When creating a wallet you need at least to define one, but recommended two, derivation path strings. The first is an 
+external one, used to generate external addresses while the other one is for internal addresses, such as change 
+addresses etc. The simple wallet uses [BIP 84](https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki) 
+descriptors by default. BIP 84 has the following structure:
+
+    m / purpose' / coin_type' / account' / change / address_index
+
+So the descriptor used for external usage becomes:
+
+    m/84'/1'/0'/0/0
+
+Which means descriptor is according to _m/ BIP 84 / Bitcoin Testnet / Account 0 / external chain / first key by index_
+
+The descriptor for internal usage then becomes:
+
+    m/84'/1'/0'/1/0
+
+The code I used to calculate derivation paths look like the code below, the method _get_derivation_path_
+checks the parameter external and type of chain to generate the expected str value:
 
 ```
-    /// Help method to create an online wallet that is in common for create and import commands.
-    pub(crate) fn create_online_wallet(name : &String, chain : &Chain,
-    mnemonic : Mnemonic, password : String,
-    settings : &Settings, app_dir : &PathBuf) -> Result<(), Box<dyn Error>>{
-    let network = get_chain_name(chain);
-    let ext_path = DerivationPath::from_str("m/84'/1'/0'/0/0").unwrap();
-    let seed = mnemonic.to_seed(&password);
-    let root_key = ExtendedPrivKey::new_master(network, &seed).unwrap();
+/// Help method to get the coin type in the derivation path.
+fn get_coin_type(chain : &Chain) -> &str {
+    match chain {
+        Chain::Testnet=> "1'",
+        Chain::Mainnet=> "0'",
+    }
+}
 
-    let ext_key = (root_key, ext_path);
-    let (ext_descriptor, ext_key_map, _) = bdk::descriptor!(wpkh(ext_key)).unwrap();
+/// Help method to get the change type in the derivation path
+fn get_change(external : bool) ->  &'static str{
+    if external {
+        return "0";
+    }
+    return "1";
+}
 
-    let ext_descriptor_with_secret = ext_descriptor.to_string_with_secret(&ext_key_map);
-
-    let int_path = DerivationPath::from_str("m/84'/1'/0'/1/0").unwrap();
-    let int_key = (root_key, int_path);
-    let (int_descriptor, int_key_map, _) = bdk::descriptor!(wpkh(int_key)).unwrap();
-    let int_descriptor_with_secret = int_descriptor.to_string_with_secret(&int_key_map);
-    let mut wallet_db_path = app_dir.clone();
-    wallet_db_path.push(format!("{}.db",name));
-
-    let database = settings.get_wallet_database(name)?;
-
-    let wallet: Wallet<AnyDatabase> = Wallet::new(
-        &ext_descriptor_with_secret,
-        Some(&int_descriptor_with_secret),
-        network,
-        database
-    )?;
-
-    let wallet_data = WalletData::new(name,&wallet,
-                                      &ext_descriptor_with_secret,
-                                      &int_descriptor_with_secret,
-                                      &root_key.private_key);
-    let _ = wallet_data.save(&password)?;
-    let wallet_path = get_wallet_path(name)?;
-    println!("Wallet created and stored in {}", wallet_path.to_str().unwrap());
-    return Ok(())
+/// Method to calculate derivation path for given type (external or internal) and chain.
+fn get_derivation_path(external : bool, chain : &Chain) -> DerivationPath{
+    return DerivationPath::from_str(format!("m/84'/{}/0'/{}/0",
+                                     get_coin_type(chain),
+                                     get_change(external)).as_str()).unwrap();
 }
 ```
 
-With this _create_online_wallet_ doing all the heavy lifting the create wallet command
-becomes quite straight forward. If first generates the 12 Mnemonic sees phrases, displays
-them on screen and then calls the _create_online_wallet_ function.
+Some details on BDKs support for Wallet Descriptors can be found [here](https://bitcoindevkit.org/descriptors/)
+
+### Create Wallet Code
+
+So after figuring out the Descriptor used and descriptor paths the code the create wallet code
+can be created.
+
+Create Wallet command first prompts for the password used as 13:th seed word and key for the
+encrypted wallet data. Then it generates Mnemonic seed words in English. Then calls the method
+_create_online_wallet()_ (explained below) which is used by both the create and import wallet commands.
 
 ```
     fn execute(self : &Self) -> Result<(), Box<dyn Error>>{
@@ -119,12 +154,65 @@ them on screen and then calls the _create_online_wallet_ function.
     }
 ```
 
+The code for actually creating the wallet, first converts the mnemonic to a seed value. Then generates the root key and
+external derivation path to create the external key.
+
+Then the root key is used with the internal derivation path to create the internal key. The trick when generating
+these descriptors was to use the to_string_with_secret in order to store the private key and not just the public data.
+
+Finally, the wallet is created using the BDK _Wallet::new_ function and is stored encrypted to file
+using the projects WalletData struct.
+
+```
+/// Help method to create an online wallet that is in common for create and import commands.
+pub(crate) fn create_online_wallet(name : &String, chain : &Chain,
+                                   mnemonic : Mnemonic, password : String,
+                                   settings : &Settings, app_dir : &PathBuf) -> Result<(), Box<dyn Error>>{
+    let network = get_chain_name(chain);
+    let ext_path = get_derivation_path(true, chain);
+    let seed = mnemonic.to_seed(&password);
+    let root_key = ExtendedPrivKey::new_master(network, &seed).unwrap();
+
+    let ext_key = (root_key, ext_path);
+    let (ext_descriptor, ext_key_map, _) = bdk::descriptor!(wpkh(ext_key)).unwrap();
+
+    let ext_descriptor_with_secret = ext_descriptor.to_string_with_secret(&ext_key_map);
+
+    let int_path = get_derivation_path(false, chain);
+    let int_key = (root_key, int_path);
+    let (int_descriptor, int_key_map, _) = bdk::descriptor!(wpkh(int_key)).unwrap();
+    let int_descriptor_with_secret = int_descriptor.to_string_with_secret(&int_key_map);
+    let mut wallet_db_path = app_dir.clone();
+    wallet_db_path.push(format!("{}.db",name));
+
+    let database = settings.get_wallet_database(name)?;
+
+    let wallet: Wallet<AnyDatabase> = Wallet::new(
+        &ext_descriptor_with_secret,
+        Some(&int_descriptor_with_secret),
+        network,
+        database
+    )?;
+
+    let wallet_data = WalletData::new(name,&wallet,
+                                      &ext_descriptor_with_secret,
+                                      &int_descriptor_with_secret,
+                                      &root_key.private_key);
+    let _ = wallet_data.save(&password)?;
+    let wallet_path = get_wallet_path(name)?;
+    println!("Wallet created and stored in {}", wallet_path.to_str().unwrap());
+    return Ok(())
+}
+```
+
+The code for creating a wallet can be found in _src/cmd/nowallet/mod.rs_ and _src/cmd/nowallet/createwalletcmd.rs_.
+
 ### Encrypting the Wallet Data
 
 A wallet produces two files, one database file that is created and maintained by the Sled Database.
 
 The other one is created by the wallet itself. It is a simple data structure WalletData that is
-serialized to YAML using [serde_yaml](https://crates.io/crates/serde_yaml) crate, This is done setting the 
+serialized to YAML using [serde_yaml](https://crates.io/crates/serde_yaml) crate, This is done by adding the 
 Serialize and Deserialize annotation on the struct.
 
 ```
@@ -145,7 +233,7 @@ pub online: bool,
 }
 ```
 
-In the implementation of WalletData is functions for loading and storing to file but since you would
+The WalletData implementation contains functions for loading and storing to file but since you would
 want this sensitive information encrypted I also added encrypt and decrypt code.
 
 The encryption key is the same password used as the 13th seed phrase to keep it simple. The encryption
@@ -302,7 +390,7 @@ The full code to create an imported wallet is and can be found _src/cmd/nowallet
 ## Displaying the Balance
 
 To display the current wallet balance is really simple. Just call _get_balance()_ to
-get the number of available Satoshis in the wallet. A real wallet would probably
+get the number of available satoshis in the wallet. A real wallet would probably
 convert it into different denominations (BTC, bits, USD etc) but that is pure calculations.
 
 ```
