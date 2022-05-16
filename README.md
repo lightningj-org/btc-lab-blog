@@ -1,5 +1,5 @@
 # README
 
-This is the source for BTC Tooling Blog.
+This is the source for BTC Lab Blog.
 
-Project website is located at https://lightningj-org.github.io/btc-tool-blog/
+Project website is located at https://blog.btclab.dev
